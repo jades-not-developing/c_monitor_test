@@ -148,7 +148,7 @@ int main(int argc, char** argv)
         SDL_WINDOWPOS_CENTERED,
         800,
         600,
-        SDL_WINDOW_SHOWN);
+        SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
     SDL_Renderer* main_renderer = SDL_CreateRenderer(main_window, -1, SDL_RENDERER_ACCELERATED);
 
     Clock clock = {0};
