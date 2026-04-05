@@ -7,6 +7,7 @@
 #include "types.h"
 #include "clock.h"
 
+
 typedef struct
 {
     u8 r;
@@ -14,17 +15,67 @@ typedef struct
     u8 b;
 } Color;
 
+const Color COLOR_FRAMES[] = {
+    {255,20,20},
+    {20,255,20},
+    {20,20,255},
+};
+
 bool color_eq(Color c1, Color c2)
 {
     return c1.r == c2.r && c1.g == c2.g && c1.b == c2.b;
 }
+
+typedef enum
+{
+    DIRECTION_FORWARD = 0,
+    DIRECTION_BACKWARD,
+} AnimationDirection;
 
 typedef struct
 {
     f64 wipe_percentage;
     Color previous_color;
     Color current_color;
+
+    u8 color_frame;
+    u8 animating;
+    AnimationDirection animation_direction;
 } TestCanvas;
+
+void test_canvas_previous_color(TestCanvas* canvas)
+{
+    if (canvas->animating)
+        canvas->previous_color = canvas->current_color;
+
+    if (canvas->color_frame <= 0)
+        canvas->color_frame = ARRAY_LEN(COLOR_FRAMES) - 1;
+    else
+        canvas->color_frame--;
+
+
+    canvas->animation_direction = DIRECTION_BACKWARD;
+    canvas->current_color = COLOR_FRAMES[canvas->color_frame];
+    canvas->wipe_percentage = 0;
+    canvas->animating = 1;
+}
+
+void test_canvas_next_color(TestCanvas* canvas)
+{
+    if (canvas->animating)
+        canvas->previous_color = canvas->current_color;
+
+    if (canvas->color_frame >= ARRAY_LEN(COLOR_FRAMES) - 1)
+        canvas->color_frame = 0;
+    else
+        canvas->color_frame++;
+
+
+    canvas->animation_direction = DIRECTION_FORWARD;
+    canvas->current_color = COLOR_FRAMES[canvas->color_frame];
+    canvas->wipe_percentage = 0;
+    canvas->animating = 1;
+}
 
 void test_canvas_update(SDL_Renderer* renderer, SDL_Window* window, Clock* clock, TestCanvas* canvas)
 {
@@ -44,6 +95,7 @@ void test_canvas_update(SDL_Renderer* renderer, SDL_Window* window, Clock* clock
 
         canvas->previous_color = canvas->current_color;
         canvas->wipe_percentage = 0;
+        canvas->animating = 0;
     } else
     {
         Color prev_c = canvas->previous_color;
@@ -57,19 +109,32 @@ void test_canvas_update(SDL_Renderer* renderer, SDL_Window* window, Clock* clock
         f64 easeOutQuart = 1.f - pow(1.f - normalized_percentage, 4.f);
         i32 width = (i32)((f32)(w + 1) * easeOutQuart);
 
-        SDL_Rect r = {
-            .x = 0,
-            .y = 0,
-            .w = width,
-            .h = h,
-         };
-        SDL_SetRenderDrawColor(renderer, current_c.r, current_c.g, current_c.b, 0xFF);
-        SDL_RenderFillRect(renderer, &r);
+        if (canvas->animation_direction == DIRECTION_FORWARD)
+        {
+            SDL_Rect r = {
+                .x = 0,
+                .y = 0,
+                .w = width,
+                .h = h,
+             };
+            SDL_SetRenderDrawColor(renderer, current_c.r, current_c.g, current_c.b, 0xFF);
+            SDL_RenderFillRect(renderer, &r);
+        } else
+        {
+            SDL_Rect r = {
+                .x = w - width,
+                .y = 0,
+                .w = width,
+                .h = h,
+             };
+            SDL_SetRenderDrawColor(renderer, current_c.r, current_c.g, current_c.b, 0xFF);
+            SDL_RenderFillRect(renderer, &r);
+        }
     }
 
     if (canvas->wipe_percentage < 100.f && !color_eq(canvas->current_color, canvas->previous_color))
     {
-        canvas->wipe_percentage += 0.05f * clock->delta_time;
+        canvas->wipe_percentage += 0.09f * clock->delta_time;
     }
 }
 
@@ -90,8 +155,8 @@ int main(int argc, char** argv)
     clock_init(&clock);
 
     TestCanvas canvas = {0};
-    canvas.current_color = (Color){0};
-    canvas.previous_color = (Color){0};
+    canvas.current_color = COLOR_FRAMES[0];
+    canvas.previous_color = COLOR_FRAMES[0];
 
 
     u8 running = 1;
@@ -110,10 +175,9 @@ int main(int argc, char** argv)
             if (event.type == SDL_KEYDOWN)
             {
                 if (event.key.keysym.sym == SDLK_RIGHT)
-                {
-                    canvas.current_color.r = 255;
-                    canvas.wipe_percentage = 0;
-                }
+                    test_canvas_next_color(&canvas);
+                else if (event.key.keysym.sym == SDLK_LEFT)
+                    test_canvas_previous_color(&canvas);
             }
         }
 

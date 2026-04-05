@@ -8,3 +8,6 @@
                    fprintf(stderr, ": %s\n", err); \
                    exit(1); \
                    SDL_free((void*)err);}
+
+
+#define ARRAY_LEN(array) (sizeof(array)/sizeof(*(array)))
