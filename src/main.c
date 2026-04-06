@@ -1,163 +1,21 @@
 #define SDL_MAIN_HANDLED
 #include <SDL2/SDL.h>
 
-#include <stdio.h>
-
-#include "macros.h"
 #include "types.h"
 #include "clock.h"
+#include "canvas.h"
+#include "sdl_instance.h"
 
-
-typedef struct
+int main()
 {
-    u8 r;
-    u8 g;
-    u8 b;
-} Color;
-
-const Color COLOR_FRAMES[] = {
-    {255,20,20},
-    {20,255,20},
-    {20,20,255},
-};
-
-bool color_eq(Color c1, Color c2)
-{
-    return c1.r == c2.r && c1.g == c2.g && c1.b == c2.b;
-}
-
-typedef enum
-{
-    DIRECTION_FORWARD = 0,
-    DIRECTION_BACKWARD,
-} AnimationDirection;
-
-typedef struct
-{
-    f64 wipe_percentage;
-    Color previous_color;
-    Color current_color;
-
-    u8 color_frame;
-    u8 animating;
-    AnimationDirection animation_direction;
-} TestCanvas;
-
-void test_canvas_previous_color(TestCanvas* canvas)
-{
-    if (canvas->animating)
-        canvas->previous_color = canvas->current_color;
-
-    if (canvas->color_frame <= 0)
-        canvas->color_frame = ARRAY_LEN(COLOR_FRAMES) - 1;
-    else
-        canvas->color_frame--;
-
-
-    canvas->animation_direction = DIRECTION_BACKWARD;
-    canvas->current_color = COLOR_FRAMES[canvas->color_frame];
-    canvas->wipe_percentage = 0;
-    canvas->animating = 1;
-}
-
-void test_canvas_next_color(TestCanvas* canvas)
-{
-    if (canvas->animating)
-        canvas->previous_color = canvas->current_color;
-
-    if (canvas->color_frame >= ARRAY_LEN(COLOR_FRAMES) - 1)
-        canvas->color_frame = 0;
-    else
-        canvas->color_frame++;
-
-
-    canvas->animation_direction = DIRECTION_FORWARD;
-    canvas->current_color = COLOR_FRAMES[canvas->color_frame];
-    canvas->wipe_percentage = 0;
-    canvas->animating = 1;
-}
-
-void test_canvas_update(SDL_Renderer* renderer, SDL_Window* window, Clock* clock, TestCanvas* canvas)
-{
-    i32 w;
-    i32 h;
-    if (canvas->wipe_percentage == 0)
-    {
-        Color c = canvas->current_color;
-        SDL_SetRenderDrawColor(renderer, c.r, c.g, c.b, 0xFF);
-        SDL_RenderClear(renderer);
-    }
-    else if (canvas->wipe_percentage == 100)
-    {
-        Color c = canvas->current_color;
-        SDL_SetRenderDrawColor(renderer, c.r, c.g, c.b, 0xFF);
-        SDL_RenderClear(renderer);
-
-        canvas->previous_color = canvas->current_color;
-        canvas->wipe_percentage = 0;
-        canvas->animating = 0;
-    } else
-    {
-        Color prev_c = canvas->previous_color;
-        SDL_SetRenderDrawColor(renderer, prev_c.r, prev_c.g, prev_c.b, 0xFF);
-        SDL_RenderClear(renderer);
-
-        Color current_c = canvas->current_color;
-        SDL_GetWindowSize(window, &w, &h);
-
-        f64 normalized_percentage = canvas->wipe_percentage / 100.f;
-        f64 easeOutQuart = 1.f - pow(1.f - normalized_percentage, 4.f);
-        i32 width = (i32)((f32)(w + 1) * easeOutQuart);
-
-        if (canvas->animation_direction == DIRECTION_FORWARD)
-        {
-            SDL_Rect r = {
-                .x = 0,
-                .y = 0,
-                .w = width,
-                .h = h,
-             };
-            SDL_SetRenderDrawColor(renderer, current_c.r, current_c.g, current_c.b, 0xFF);
-            SDL_RenderFillRect(renderer, &r);
-        } else
-        {
-            SDL_Rect r = {
-                .x = w - width,
-                .y = 0,
-                .w = width,
-                .h = h,
-             };
-            SDL_SetRenderDrawColor(renderer, current_c.r, current_c.g, current_c.b, 0xFF);
-            SDL_RenderFillRect(renderer, &r);
-        }
-    }
-
-    if (canvas->wipe_percentage < 100.f && !color_eq(canvas->current_color, canvas->previous_color))
-    {
-        canvas->wipe_percentage += 0.09f * clock->delta_time;
-    }
-}
-
-int main(int argc, char** argv)
-{
-    if (SDL_Init(SDL_INIT_EVERYTHING) != 0)
-        PANIC("SDL Failed to initialize");
-
-    SDL_Window* main_window = SDL_CreateWindow("",
-        SDL_WINDOWPOS_CENTERED,
-        SDL_WINDOWPOS_CENTERED,
-        800,
-        600,
-        SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
-    SDL_Renderer* main_renderer = SDL_CreateRenderer(main_window, -1, SDL_RENDERER_ACCELERATED);
+    SDLInstance instance = {0};
+    sdl_init(&instance);
 
     Clock clock = {0};
     clock_init(&clock);
 
     TestCanvas canvas = {0};
-    canvas.current_color = COLOR_FRAMES[0];
-    canvas.previous_color = COLOR_FRAMES[0];
-
+    test_canvas_init(&canvas);
 
     u8 running = 1;
     while (running)
@@ -174,26 +32,19 @@ int main(int argc, char** argv)
 
             if (event.type == SDL_KEYDOWN)
             {
-                if (event.key.keysym.sym == SDLK_RIGHT)
-                    test_canvas_next_color(&canvas);
-                else if (event.key.keysym.sym == SDLK_LEFT)
-                    test_canvas_previous_color(&canvas);
+                if (event.key.keysym.sym == SDLK_RIGHT)     test_canvas_next_color(&canvas);
+                else if (event.key.keysym.sym == SDLK_LEFT) test_canvas_previous_color(&canvas);
             }
         }
 
-        SDL_SetRenderDrawColor(main_renderer, 0, 0, 0, 255);
+        SDL_SetRenderDrawColor(instance.main_renderer, 0, 0, 0, 255);
 
-        test_canvas_update(main_renderer, main_window, &clock, &canvas);
+        test_canvas_update(instance.main_renderer, instance.main_window, &clock, &canvas);
 
-        SDL_RenderPresent(main_renderer);
+        SDL_RenderPresent(instance.main_renderer);
     }
 
-    SDL_DestroyWindow(main_window);
-    SDL_DestroyRenderer(main_renderer);
-
-
-
-    SDL_Quit();
+    sdl_destroy(&instance);
 
     return 0;
 }
