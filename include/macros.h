@@ -9,5 +9,9 @@
                    exit(1); \
                    SDL_free((void*)err);}
 
+#define TODO(...) { fprintf(stderr, "TODO: "); \
+                  fprintf(stderr, __VA_ARGS__); \
+                  fprintf(stderr, "\n"); \
+                  exit(1); }
 
 #define ARRAY_LEN(array) (sizeof(array)/sizeof(*(array)))
