@@ -5,6 +5,8 @@
 
 #include <SDL2/SDL.h>
 
+#include "sdl_instance.h"
+
 typedef struct
 {
     u8 r;
@@ -34,4 +36,4 @@ typedef struct
 void test_canvas_init(TestCanvas* canvas);
 void test_canvas_previous_color(TestCanvas* canvas);
 void test_canvas_next_color(TestCanvas* canvas);
-void test_canvas_update(SDL_Renderer* renderer, SDL_Window* window, Clock* clock, TestCanvas* canvas);
+void test_canvas_update(SDLInstance* i, Clock* clock, TestCanvas* canvas);

@@ -57,21 +57,21 @@ void test_canvas_next_color(TestCanvas* canvas)
     canvas->animating = true;
 }
 
-void test_canvas_update(SDL_Renderer* renderer, SDL_Window* window, Clock* clock, TestCanvas* canvas)
+void test_canvas_update(SDLInstance* i, Clock* clock, TestCanvas* canvas)
 {
     i32 w;
     i32 h;
     if (canvas->wipe_percentage == 0)
     {
         Color c = canvas->current_color;
-        SDL_SetRenderDrawColor(renderer, c.r, c.g, c.b, 0xFF);
-        SDL_RenderClear(renderer);
+        sdl_set_color(i, SDL_INSTANCE_MAIN, c.r, c.g, c.b);
+        sdl_clear(i, SDL_INSTANCE_MAIN);
     }
     else if (canvas->wipe_percentage == 100)
     {
         Color c = canvas->current_color;
-        SDL_SetRenderDrawColor(renderer, c.r, c.g, c.b, 0xFF);
-        SDL_RenderClear(renderer);
+        sdl_set_color(i, SDL_INSTANCE_MAIN, c.r, c.g, c.b);
+        sdl_clear(i, SDL_INSTANCE_MAIN);
 
         canvas->previous_color = canvas->current_color;
         canvas->wipe_percentage = 0;
@@ -79,11 +79,11 @@ void test_canvas_update(SDL_Renderer* renderer, SDL_Window* window, Clock* clock
     } else
     {
         Color prev_c = canvas->previous_color;
-        SDL_SetRenderDrawColor(renderer, prev_c.r, prev_c.g, prev_c.b, 0xFF);
-        SDL_RenderClear(renderer);
+        sdl_set_color(i, SDL_INSTANCE_MAIN, prev_c.r, prev_c.g, prev_c.b);
+        sdl_clear(i, SDL_INSTANCE_MAIN);
 
         Color current_c = canvas->current_color;
-        SDL_GetWindowSize(window, &w, &h);
+        sdl_get_window_size(i, SDL_INSTANCE_MAIN, &w, &h);
 
         f64 normalized_percentage = canvas->wipe_percentage / 100.f;
         f64 easeOutQuart = 1.f - pow(1.f - normalized_percentage, 4.f);
@@ -97,8 +97,8 @@ void test_canvas_update(SDL_Renderer* renderer, SDL_Window* window, Clock* clock
                 .w = width,
                 .h = h,
              };
-            SDL_SetRenderDrawColor(renderer, current_c.r, current_c.g, current_c.b, 0xFF);
-            SDL_RenderFillRect(renderer, &r);
+            sdl_set_color(i, SDL_INSTANCE_MAIN, current_c.r, current_c.g, current_c.b);
+            sdl_fill_rect(i, SDL_INSTANCE_MAIN, &r);
         } else
         {
             SDL_Rect r = {
@@ -107,8 +107,8 @@ void test_canvas_update(SDL_Renderer* renderer, SDL_Window* window, Clock* clock
                 .w = width,
                 .h = h,
              };
-            SDL_SetRenderDrawColor(renderer, current_c.r, current_c.g, current_c.b, 0xFF);
-            SDL_RenderFillRect(renderer, &r);
+            sdl_set_color(i, SDL_INSTANCE_MAIN, current_c.r, current_c.g, current_c.b);
+            sdl_fill_rect(i, SDL_INSTANCE_MAIN, &r);
         }
     }
 
@@ -116,4 +116,6 @@ void test_canvas_update(SDL_Renderer* renderer, SDL_Window* window, Clock* clock
     {
         canvas->wipe_percentage += 0.09f * clock->delta_time;
     }
+
+    sdl_present(i, SDL_INSTANCE_MAIN);
 }

@@ -37,11 +37,9 @@ int main()
             }
         }
 
-        SDL_SetRenderDrawColor(instance.main_renderer, 0, 0, 0, 255);
+        sdl_set_color(&instance, SDL_INSTANCE_MAIN, 0, 0, 0);
 
-        test_canvas_update(instance.main_renderer, instance.main_window, &clock, &canvas);
-
-        SDL_RenderPresent(instance.main_renderer);
+        test_canvas_update(&instance, &clock, &canvas);
     }
 
     sdl_destroy(&instance);
