@@ -11,6 +11,7 @@ int main()
     SDLInstance instance = {0};
     sdl_init(&instance);
 
+
     Clock clock = {0};
     clock_init(&clock);
 

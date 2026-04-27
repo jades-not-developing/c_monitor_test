@@ -36,4 +36,7 @@ typedef struct
 void test_canvas_init(TestCanvas* canvas);
 void test_canvas_previous_color(TestCanvas* canvas);
 void test_canvas_next_color(TestCanvas* canvas);
+
+#ifdef SDL_BACKEND
 void test_canvas_update(SDLInstance* i, Clock* clock, TestCanvas* canvas);
+#endif

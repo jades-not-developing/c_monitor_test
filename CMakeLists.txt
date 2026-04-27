@@ -6,10 +6,21 @@ include_directories(${SDL2_INCLUDE_DIRS})
 
 set(CMAKE_C_STANDARD 23)
 
-add_executable(c_monitor_test
-              src/main.c
+set(SRC_FILES src/main.c
               src/clock.c
-              src/canvas.c
+              src/canvas/canvas.c
               src/sdl_instance.c)
+
+#TODO: create GLFW_BACKEND
+if (SDL_BACKEND)
+    message(STATUS "Compiling with SDL2 backend")
+    set(SRC_FILES ${SRC_FILES} src/canvas/canvas_sdl.c
+                               src/sdl_instance.c)
+else()
+    message(FATAL_ERROR "No backend specified, try building with the SDL_BACKEND flag set")
+endif()
+
+add_executable(c_monitor_test ${SRC_FILES})
+
 target_link_libraries(c_monitor_test SDL2::SDL2)
 target_include_directories(c_monitor_test PRIVATE include)
