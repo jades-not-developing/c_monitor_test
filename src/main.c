@@ -5,9 +5,22 @@
 #include "clock.h"
 #include "canvas.h"
 #include "sdl_instance.h"
+#include "fs.h"
 
 int main()
 {
+    FSReadResult r = fs_read("../src/main.c");
+    if (r.has_error)
+    {
+        fprintf(stderr, "Failed to read file '../src/main.c': %s\n", r.error);
+    }
+    else
+    {
+        printf("source len: %lld\n", r.bytes_len);
+        printf("source:\n`%s`\n", (char*)r.bytes);
+    }
+    fr_free(&r);
+
     SDLInstance instance = {0};
     sdl_init(&instance);
 
